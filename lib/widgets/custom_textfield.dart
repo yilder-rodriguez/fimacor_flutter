@@ -13,12 +13,12 @@ class CustomTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
-      child: TextFormField(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextField(
         obscureText: obscureText,
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(),
+          border: const OutlineInputBorder(),
         ),
       ),
     );
