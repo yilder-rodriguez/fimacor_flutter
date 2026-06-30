@@ -4,7 +4,6 @@ import 'screens/login_screen.dart';
 import 'screens/menu_screen.dart';
 import 'screens/registro_screen.dart';
 import 'screens/recuperar_screen.dart';
-import 'data/fake_data.dart';
 void main() {
   runApp(const FimacorApp());
 }

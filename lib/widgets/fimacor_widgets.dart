@@ -77,7 +77,7 @@ class SenaBadge extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: FimacorColors.primario.withOpacity(0.1),
+        color: FimacorColors.primario.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: const Text(
@@ -201,8 +201,8 @@ class FimacorMensaje extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: esError
-            ? Colors.red.withOpacity(0.1)
-            : Colors.green.withOpacity(0.1),
+            ? Colors.red.withValues(alpha: 0.1)
+            : Colors.green.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
