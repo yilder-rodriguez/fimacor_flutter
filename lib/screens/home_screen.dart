@@ -33,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Panel'),
+        title: const Text('FIMACOR'),
         actions: [
           IconButton(
             tooltip: 'Cerrar sesion',

@@ -1,4 +1,4 @@
 class AppConfig {
   static const String apiBaseUrl =
-      'https://fimacorflutter-production.up.railway.app/MobileApiServlet';
+      'https://fimacorflutter-production.up.railway.app/';
 }

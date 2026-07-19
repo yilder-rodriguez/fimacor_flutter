@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/manual_item.dart';
 import '../services/api_client.dart';
+import '../theme.dart';
 import '../widgets/app_snack.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/future_panel.dart';
@@ -47,6 +48,7 @@ class _ManualsScreenState extends State<ManualsScreen> {
   @override
   Widget build(BuildContext context) {
     return FuturePanel<List<ManualItem>>(
+      mensajeCarga: 'Cargando manuales...',
       future: _future,
       onRefresh: () => setState(() => _future = widget.api.manuals()),
       builder: (context, manuals) {
@@ -66,7 +68,18 @@ class _ManualsScreenState extends State<ManualsScreen> {
                     children: [
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.menu_book_rounded),
+                        leading: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: AppColors.verdeClaroChip,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Icon(
+                            Icons.menu_book_rounded,
+                            color: AppColors.primario,
+                          ),
+                        ),
                         title: Text(manual.title),
                         subtitle: Text(
                           [

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme.dart';
+
 class HeroPanel extends StatelessWidget {
   const HeroPanel({
     required this.title,
@@ -17,7 +19,11 @@ class HeroPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF16352D),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.fondoOscuro, AppColors.fondoOscuroVerdoso],
+        ),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(

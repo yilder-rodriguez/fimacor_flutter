@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme.dart';
+
 class BrandHeader extends StatelessWidget {
   const BrandHeader({super.key});
 
@@ -11,13 +13,13 @@ class BrandHeader extends StatelessWidget {
           width: 58,
           height: 58,
           decoration: BoxDecoration(
-            color: const Color(0xFFE3F5EF),
+            color: AppColors.verdeClaroChip,
             borderRadius: BorderRadius.circular(18),
           ),
           child: const Icon(
-            Icons.account_circle_outlined,
-            color: Color(0xFF10875F),
-            size: 34,
+            Icons.precision_manufacturing_rounded,
+            color: AppColors.primario,
+            size: 32,
           ),
         ),
         const SizedBox(width: 14),
@@ -29,12 +31,13 @@ class BrandHeader extends StatelessWidget {
                 'FIMACOR',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w900,
+                      color: AppColors.primarioOscuro,
                     ),
               ),
               Text(
-                'Panel de acceso',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF667B75),
+                'Centro de Manufactura Textil y del Cuero · SENA',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textoLabel,
                     ),
               ),
             ],

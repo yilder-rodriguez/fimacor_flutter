@@ -55,6 +55,7 @@ class _MachinesScreenState extends State<MachinesScreen> {
   @override
   Widget build(BuildContext context) {
     return FuturePanel<List<Machine>>(
+      mensajeCarga: 'Cargando maquinas...',
       future: _future,
       onRefresh: () => setState(() => _future = widget.api.assignedMachines()),
       builder: (context, machines) {

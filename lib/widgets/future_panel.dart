@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'loading_screen.dart';
+
 class FuturePanel<T> extends StatelessWidget {
   const FuturePanel({
     required this.future,
     required this.builder,
     required this.onRefresh,
+    this.mensajeCarga = 'Cargando...',
     super.key,
   });
 
@@ -12,13 +15,21 @@ class FuturePanel<T> extends StatelessWidget {
   final Widget Function(BuildContext context, T data) builder;
   final VoidCallback onRefresh;
 
+  /// Texto mostrado en la pantalla de carga mientras se resuelve el
+  /// future (para que cada pantalla pueda personalizarlo, ej.
+  /// "Cargando maquinas...", "Cargando mantenimientos...").
+  final String mensajeCarga;
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<T>(
       future: future,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return LoadingScreen(
+            mensaje: mensajeCarga,
+            fondoTransparente: true,
+          );
         }
         if (snapshot.hasError) {
           return Center(

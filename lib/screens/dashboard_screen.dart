@@ -6,6 +6,7 @@ import '../widgets/future_panel.dart';
 import '../widgets/hero_panel.dart';
 import '../widgets/info_card.dart';
 import '../widgets/metric_card.dart';
+import '../widgets/tip_bot_card.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -85,6 +86,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 14),
+            const TipBotCard(),
           ],
         );
       },

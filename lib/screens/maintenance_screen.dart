@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/maintenance_item.dart';
 import '../services/api_client.dart';
+import '../theme.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/future_panel.dart';
 import '../widgets/info_card.dart';
@@ -27,6 +28,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
   @override
   Widget build(BuildContext context) {
     return FuturePanel<List<MaintenanceItem>>(
+      mensajeCarga: 'Cargando mantenimientos...',
       future: _future,
       onRefresh: () => setState(() => _future = widget.api.maintenance()),
       builder: (context, items) {
@@ -40,7 +42,18 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
             return InfoCard(
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.build_rounded),
+                leading: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.verdeClaroChip,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.build_rounded,
+                    color: AppColors.primario,
+                  ),
+                ),
                 title: Text(
                   item.machineCode.isEmpty
                       ? 'Mantenimiento programado'

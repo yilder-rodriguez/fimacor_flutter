@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme.dart';
+
 class EmptyState extends StatelessWidget {
   const EmptyState({required this.text, super.key});
 
@@ -13,9 +15,25 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.inbox_outlined, size: 48, color: Color(0xFF8EA19B)),
-            const SizedBox(height: 10),
-            Text(text, textAlign: TextAlign.center),
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: AppColors.verdeClaroChip,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.inbox_outlined,
+                size: 30,
+                color: AppColors.primario,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textoLabel),
+            ),
           ],
         ),
       ),
