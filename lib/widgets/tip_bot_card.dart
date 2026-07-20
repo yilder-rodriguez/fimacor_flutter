@@ -67,7 +67,7 @@ class TipBotCard extends StatelessWidget {
                 bottomLeft: Radius.circular(18),
                 bottomRight: Radius.circular(18),
               ),
-              border: Border.all(color: AppColors.acento.withOpacity(0.25)),
+              border: Border.all(color: AppColors.acento.withValues(alpha: 0.25)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
