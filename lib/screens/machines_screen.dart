@@ -8,6 +8,24 @@ import '../widgets/future_panel.dart';
 import '../widgets/info_card.dart';
 import 'report_failure_dialog.dart';
 
+/// Datos combinados que necesita la pantalla: las maquinas asignadas
+/// al cuentadante, mas los catalogos completos de sede/area/ambiente
+/// (estos ultimos NO dependen de lo que tenga asignado el usuario,
+/// muestran todo lo que existe en la base de datos).
+class _MachinesData {
+  _MachinesData({
+    required this.machines,
+    required this.sedes,
+    required this.areas,
+    required this.ambientes,
+  });
+
+  final List<Machine> machines;
+  final List<String> sedes;
+  final List<String> areas;
+  final List<String> ambientes;
+}
+
 class MachinesScreen extends StatefulWidget {
   const MachinesScreen({required this.api, super.key});
 
@@ -18,18 +36,35 @@ class MachinesScreen extends StatefulWidget {
 }
 
 class _MachinesScreenState extends State<MachinesScreen> {
-  late Future<List<Machine>> _future;
+  late Future<_MachinesData> _future;
   String? selectedSede;
   String? selectedArea;
   String? selectedAmbiente;
-  List<String> sedes = [];
-  List<String> areas = [];
-  List<String> ambientes = [];
 
   @override
   void initState() {
     super.initState();
-    _future = widget.api.assignedMachines();
+    _future = _cargarDatos();
+  }
+
+  Future<_MachinesData> _cargarDatos() async {
+    final resultados = await Future.wait([
+      widget.api.assignedMachines(),
+      widget.api.sedesCatalog(),
+      widget.api.areasCatalog(),
+      widget.api.ambientesCatalog(),
+    ]);
+
+    return _MachinesData(
+      machines: resultados[0] as List<Machine>,
+      sedes: resultados[1] as List<String>,
+      areas: resultados[2] as List<String>,
+      ambientes: resultados[3] as List<String>,
+    );
+  }
+
+  void _recargar() {
+    setState(() => _future = _cargarDatos());
   }
 
   Future<void> _reportFailure(Machine machine) async {
@@ -46,7 +81,7 @@ class _MachinesScreenState extends State<MachinesScreen> {
       );
       if (!mounted) return;
       showAppSnack(context, 'Novedad registrada.');
-      setState(() => _future = widget.api.assignedMachines());
+      _recargar();
     } catch (error) {
       if (mounted) showAppSnack(context, error.toString());
     }
@@ -54,74 +89,24 @@ class _MachinesScreenState extends State<MachinesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FuturePanel<List<Machine>>(
+    return FuturePanel<_MachinesData>(
       mensajeCarga: 'Cargando maquinas...',
       future: _future,
-      onRefresh: () => setState(() => _future = widget.api.assignedMachines()),
-      builder: (context, machines) {
-        if (machines.isEmpty) {
+      onRefresh: _recargar,
+      builder: (context, data) {
+        if (data.machines.isEmpty) {
           return const EmptyState(text: 'No tienes maquinas asignadas.');
         }
-        // helpers que usan los nuevos campos `sede/area/ambiente` si existen,
-        // o hacen fallback parseando `location` separado por '-' para compatibilidad.
-        List<String> partsOf(String loc) => loc
-            .split('-')
-            .map((s) => s.trim())
-            .where((s) => s.isNotEmpty)
-            .toList();
 
-        String? sedeOf(Machine m) {
-          if (m.sede != null && m.sede!.trim().isNotEmpty) return m.sede!.trim();
-          final p = partsOf(m.location);
-          return p.isNotEmpty ? p[0] : null;
-        }
+        String? sedeOf(Machine m) =>
+            (m.sede != null && m.sede!.trim().isNotEmpty) ? m.sede!.trim() : null;
+        String? areaOf(Machine m) =>
+            (m.area != null && m.area!.trim().isNotEmpty) ? m.area!.trim() : null;
+        String? ambienteOf(Machine m) => (m.ambiente != null && m.ambiente!.trim().isNotEmpty)
+            ? m.ambiente!.trim()
+            : null;
 
-        String? areaOf(Machine m) {
-          if (m.area != null && m.area!.trim().isNotEmpty) return m.area!.trim();
-          final p = partsOf(m.location);
-          return p.length > 1 ? p[1] : null;
-        }
-
-        String? ambienteOf(Machine m) {
-          if (m.ambiente != null && m.ambiente!.trim().isNotEmpty) return m.ambiente!.trim();
-          final p = partsOf(m.location);
-          return p.length > 2 ? p[2] : null;
-        }
-
-        // recalcular sedes/areas/ambientes basadas en los datos actuales
-        final all = machines;
-        sedes = all.map(sedeOf).where((s) => s != null).cast<String>().toSet().toList()..sort();
-        if (selectedSede != null && !sedes.contains(selectedSede)) selectedSede = null;
-
-        if (selectedSede != null) {
-          areas = all
-              .where((m) => sedeOf(m) == selectedSede)
-              .map(areaOf)
-              .where((s) => s != null)
-              .cast<String>()
-              .toSet()
-              .toList()
-            ..sort();
-        } else {
-          areas = [];
-          selectedArea = null;
-        }
-
-        if (selectedArea != null) {
-          ambientes = all
-              .where((m) => sedeOf(m) == selectedSede && areaOf(m) == selectedArea)
-              .map(ambienteOf)
-              .where((s) => s != null)
-              .cast<String>()
-              .toSet()
-              .toList()
-            ..sort();
-        } else {
-          ambientes = [];
-          selectedAmbiente = null;
-        }
-
-        final filtered = all.where((m) {
+        final filtered = data.machines.where((m) {
           if (selectedSede != null && sedeOf(m) != selectedSede) return false;
           if (selectedArea != null && areaOf(m) != selectedArea) return false;
           if (selectedAmbiente != null && ambienteOf(m) != selectedAmbiente) return false;
@@ -144,13 +129,11 @@ class _MachinesScreenState extends State<MachinesScreen> {
                             decoration: const InputDecoration(labelText: 'Sede'),
                             items: [
                               const DropdownMenuItem(value: null, child: Text('Todas')),
-                              ...sedes.map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                              ...data.sedes.map(
+                                (s) => DropdownMenuItem(value: s, child: Text(s)),
+                              ),
                             ],
-                            onChanged: (v) => setState(() {
-                              selectedSede = v;
-                              selectedArea = null;
-                              selectedAmbiente = null;
-                            }),
+                            onChanged: (v) => setState(() => selectedSede = v),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -160,12 +143,11 @@ class _MachinesScreenState extends State<MachinesScreen> {
                             decoration: const InputDecoration(labelText: 'Área'),
                             items: [
                               const DropdownMenuItem(value: null, child: Text('Todas')),
-                              ...areas.map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                              ...data.areas.map(
+                                (s) => DropdownMenuItem(value: s, child: Text(s)),
+                              ),
                             ],
-                            onChanged: (v) => setState(() {
-                              selectedArea = v;
-                              selectedAmbiente = null;
-                            }),
+                            onChanged: (v) => setState(() => selectedArea = v),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -175,11 +157,11 @@ class _MachinesScreenState extends State<MachinesScreen> {
                             decoration: const InputDecoration(labelText: 'Ambiente'),
                             items: [
                               const DropdownMenuItem(value: null, child: Text('Todas')),
-                              ...ambientes.map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                              ...data.ambientes.map(
+                                (s) => DropdownMenuItem(value: s, child: Text(s)),
+                              ),
                             ],
-                            onChanged: (v) => setState(() {
-                              selectedAmbiente = v;
-                            }),
+                            onChanged: (v) => setState(() => selectedAmbiente = v),
                           ),
                         ),
                       ],
@@ -190,96 +172,99 @@ class _MachinesScreenState extends State<MachinesScreen> {
               ),
             ),
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.all(18),
-                itemBuilder: (context, index) {
-                  final machine = filtered[index];
-                  return Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 720),
-                      child: InfoCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: 46,
-                                  height: 46,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE8F3FF),
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  child: const Icon(
-                                    Icons.precision_manufacturing_rounded,
-                                    color: Color(0xFF2666A3),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
+              child: filtered.isEmpty
+                  ? const EmptyState(text: 'No hay maquinas con ese filtro.')
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(18),
+                      itemBuilder: (context, index) {
+                        final machine = filtered[index];
+                        return Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 720),
+                            child: InfoCard(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        machine.code.isEmpty
-                                            ? machine.description
-                                            : machine.code,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(fontWeight: FontWeight.w800),
+                                      Container(
+                                        width: 46,
+                                        height: 46,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFE8F3FF),
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+                                        child: const Icon(
+                                          Icons.precision_manufacturing_rounded,
+                                          color: Color(0xFF2666A3),
+                                        ),
                                       ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        [
-                                          machine.description,
-                                          '${machine.brand} ${machine.model}'.trim(),
-                                          [
-                                            machine.sede?.trim(),
-                                            machine.area?.trim(),
-                                            machine.ambiente?.trim(),
-                                          ]
-                                              .where((text) => text != null && text.isNotEmpty)
-                                              .cast<String>()
-                                              .join(' - '),
-                                        ]
-                                            .where((text) => text.trim().isNotEmpty)
-                                            .join(' - '),
-                                        style: Theme.of(context).textTheme.bodyMedium,
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              machine.code.isEmpty
+                                                  ? machine.description
+                                                  : machine.code,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleMedium
+                                                  ?.copyWith(fontWeight: FontWeight.w800),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              [
+                                                machine.description,
+                                                '${machine.brand} ${machine.model}'.trim(),
+                                                [
+                                                  machine.sede?.trim(),
+                                                  machine.area?.trim(),
+                                                  machine.ambiente?.trim(),
+                                                ]
+                                                    .where((text) =>
+                                                        text != null && text.isNotEmpty)
+                                                    .cast<String>()
+                                                    .join(' - '),
+                                              ]
+                                                  .where((text) => text.trim().isNotEmpty)
+                                                  .join(' - '),
+                                              style: Theme.of(context).textTheme.bodyMedium,
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                if (machine.status.trim().isNotEmpty)
-                                  Chip(
-                                    avatar: const Icon(Icons.info_outline, size: 18),
-                                    label: Text(machine.status),
+                                  const SizedBox(height: 14),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    children: [
+                                      if (machine.status.trim().isNotEmpty)
+                                        Chip(
+                                          avatar: const Icon(Icons.info_outline, size: 18),
+                                          label: Text(machine.status),
+                                        ),
+                                      FilledButton.tonalIcon(
+                                        onPressed: () => _reportFailure(machine),
+                                        icon: const Icon(Icons.report_problem_outlined),
+                                        label: const Text('Reportar falla'),
+                                      ),
+                                    ],
                                   ),
-                                FilledButton.tonalIcon(
-                                  onPressed: () => _reportFailure(machine),
-                                  icon: const Icon(Icons.report_problem_outlined),
-                                  label: const Text('Reportar falla'),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                      },
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemCount: filtered.length,
                     ),
-                  );
-                },
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemCount: filtered.length,
-              ),
             ),
           ],
         );

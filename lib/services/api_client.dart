@@ -83,6 +83,15 @@ class ApiClient {
     return data.map(ManualItem.fromJson).toList();
   }
 
+  /// Catalogo completo de sedes/areas/ambientes registrados en la base
+  /// de datos (no depende de las maquinas asignadas al usuario).
+  Future<List<String>> sedesCatalog() => _getStringList({'accion': 'sedes'});
+
+  Future<List<String>> areasCatalog() => _getStringList({'accion': 'areas'});
+
+  Future<List<String>> ambientesCatalog() =>
+      _getStringList({'accion': 'ambientes'});
+
   Future<void> reportFailure({
     required int machineId,
     required String description,
@@ -120,6 +129,20 @@ class ApiClient {
           .toList();
     }
     throw const ApiException('Respuesta inesperada del servidor.');
+  }
+
+  /// Decodifica una respuesta que es un array plano de strings, como
+  /// ["BRONX","COMPLEJO SUR"] (usado por los catalogos de sedes/areas/
+  /// ambientes).
+  Future<List<String>> _getStringList(Map<String, String> query) async {
+    final response = await _client.get(_uri(query), headers: _headers());
+    _saveCookies(response.headers);
+    _ensureOk(response);
+    final decoded = jsonDecode(response.body);
+    if (decoded is List) {
+      return decoded.map((item) => item.toString()).toList();
+    }
+    return [];
   }
 
   Future<Map<String, dynamic>> _postJson(
