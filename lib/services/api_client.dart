@@ -19,9 +19,21 @@ class ApiClient {
   final http.Client _client;
   final Map<String, String> _cookies = {};
   int? _userId;
+  String? _role;
+
+  /// Roles autorizados a usar esta app movil. Se compara en minuscula y
+  /// solo requiere que el texto CONTENGA una de estas palabras, para
+  /// tolerar variantes como "Cuentadante" o "Tecnico de mantenimiento".
+  static const _rolesPermitidos = ['cuentadante', 'tecnico'];
 
   String get cookieHeader =>
       _cookies.entries.map((entry) => '${entry.key}=${entry.value}').join('; ');
+
+  /// Rol de la sesion activa ("Cuentadante", "Tecnico", etc.), o null si
+  /// no hay sesion iniciada.
+  String? get role => _role;
+
+  bool get isTecnico => (_role ?? '').toLowerCase().contains('tecnico');
 
   Future<LoginResult> login(String email, String password) async {
     final data = await _postJson({
@@ -31,16 +43,20 @@ class ApiClient {
     }, keepSessionOnError: true);
 
     if (data['ok'] == true) {
-      final role = (data['rol'] ?? '').toString().toLowerCase();
-      if (role.isNotEmpty && !role.contains('cuentadante')) {
+      final rolCrudo = (data['rol'] ?? '').toString();
+      final rolNormalizado = rolCrudo.toLowerCase();
+      final permitido = rolNormalizado.isEmpty ||
+          _rolesPermitidos.any((r) => rolNormalizado.contains(r));
+      if (!permitido) {
         clearSession();
         return const LoginResult(
           ok: false,
-          message: 'Esta app solo permite acceso de cuentadantes.',
+          message: 'Esta app solo permite acceso de cuentadantes y tecnicos.',
         );
       }
       _userId = asInt(data['idUsuario'] ?? data['id']);
-      return LoginResult(ok: true, userId: _userId);
+      _role = rolCrudo.isEmpty ? null : rolCrudo;
+      return LoginResult(ok: true, userId: _userId, role: _role);
     }
 
     clearSession();
@@ -61,6 +77,7 @@ class ApiClient {
   void clearSession() {
     _cookies.clear();
     _userId = null;
+    _role = null;
   }
 
   Future<DashboardSummary> dashboardSummary() async {

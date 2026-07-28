@@ -82,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const BrandHeader(),
                     const SizedBox(height: 28),
                     Text(
-                      'Ingreso de cuentadantes',
+                      'Ingreso de cuentadantes y tecnicos',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF16352D),

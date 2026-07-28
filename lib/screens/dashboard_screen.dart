@@ -41,8 +41,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           padding: const EdgeInsets.all(18),
           children: [
             HeroPanel(
-              title: 'Hola, cuentadante',
-              subtitle: 'Resumen de tus maquinas asignadas',
+              title: widget.api.isTecnico ? 'Hola, tecnico' : 'Hola, cuentadante',
+              subtitle: widget.api.isTecnico
+                  ? 'Resumen de tus mantenimientos y maquinas a cargo'
+                  : 'Resumen de tus maquinas asignadas',
               action: FilledButton.icon(
                 onPressed: widget.onOpenMachines,
                 icon: const Icon(Icons.precision_manufacturing_rounded),
