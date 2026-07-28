@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+.<<<<<<< HEAD
 # fimacor_flutter
 
 A new Flutter project.

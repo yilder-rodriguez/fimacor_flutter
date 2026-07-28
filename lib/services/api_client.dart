@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -9,6 +10,7 @@ import '../models/login_result.dart';
 import '../models/machine.dart';
 import '../models/maintenance_item.dart';
 import '../models/manual_item.dart';
+import '../models/repair_pending.dart';
 import '../models/json_helpers.dart';
 
 class ApiClient {
@@ -118,6 +120,46 @@ class ApiClient {
       'idMaquina': '$machineId',
       'descripcion': description,
     }));
+    _throwIfNotOk(data);
+  }
+
+  /// Solo para el rol Tecnico: mantenimientos asignados que aun no ha
+  /// reportado como reparados.
+  Future<List<RepairPending>> pendingRepairs() async {
+    final data = await _getList(_withUser({'accion': 'reparacionesPendientes'}));
+    return data.map(RepairPending.fromJson).toList();
+  }
+
+  /// Solo para el rol Tecnico: cierra un mantenimiento asignado adjuntando
+  /// la evidencia fotografica del arreglo (obligatoria). Equivalente movil
+  /// de "Confirmar reparacion" en la web, pero con foto.
+  Future<void> reportRepair({
+    required int historialId,
+    required String observation,
+    required List<File> photos,
+  }) async {
+    if (photos.isEmpty) {
+      throw const ApiException('Adjunta al menos una foto de evidencia.');
+    }
+
+    final request = http.MultipartRequest('POST', baseUri);
+    request.headers.addAll(_headers());
+    request.fields['accion'] = 'reportarArreglo';
+    request.fields['idHistorial'] = '$historialId';
+    request.fields['observacion'] = observation;
+    final userId = _userId;
+    if (userId != null && userId > 0) {
+      request.fields['idUsuario'] = '$userId';
+    }
+    for (final photo in photos) {
+      request.files.add(await http.MultipartFile.fromPath('foto', photo.path));
+    }
+
+    final streamed = await _client.send(request);
+    final response = await http.Response.fromStream(streamed);
+    _saveCookies(response.headers);
+    _ensureOk(response);
+    final data = _decodeMap(response.body);
     _throwIfNotOk(data);
   }
 

@@ -58,9 +58,22 @@ class _MachinesScreenState extends State<MachinesScreen> {
       mensajeCarga: 'Cargando maquinas...',
       future: _future,
       onRefresh: () => setState(() => _future = widget.api.assignedMachines()),
-      builder: (context, machines) {
+      builder: (context, allMachines) {
+        // Un tecnico solo necesita ver las maquinas que tiene a cargo
+        // MIENTRAS estan en mantenimiento (para hacer su reparacion); las
+        // que ya estan operativas no le aportan nada en esta pantalla.
+        final machines = widget.api.isTecnico
+            ? allMachines
+                .where((m) => m.status.toLowerCase().contains('mantenimiento'))
+                .toList()
+            : allMachines;
+
         if (machines.isEmpty) {
-          return const EmptyState(text: 'No tienes maquinas asignadas.');
+          return EmptyState(
+            text: widget.api.isTecnico
+                ? 'No tienes maquinas en mantenimiento en este momento.'
+                : 'No tienes maquinas asignadas.',
+          );
         }
         // helpers que usan los campos `sede/area/ambiente` si existen,
         // o hacen fallback parseando `location` separado por '-' para compatibilidad.
@@ -217,7 +230,8 @@ class _MachinesScreenState extends State<MachinesScreen> {
                       constraints: const BoxConstraints(maxWidth: 720),
                       child: _MachineCard(
                         machine: machine,
-                        onReportFailure: () => _reportFailure(machine),
+                        onReportFailure:
+                            widget.api.isTecnico ? null : () => _reportFailure(machine),
                       ),
                     ),
                   );
@@ -240,7 +254,9 @@ class _MachineCard extends StatefulWidget {
   const _MachineCard({required this.machine, required this.onReportFailure});
 
   final Machine machine;
-  final VoidCallback onReportFailure;
+  // Null para el rol Tecnico: reportar falla es exclusivo de cuentadantes,
+  // el tecnico usa la pestana "Mantenimiento" para reportar el arreglo.
+  final VoidCallback? onReportFailure;
 
   @override
   State<_MachineCard> createState() => _MachineCardState();
@@ -326,11 +342,12 @@ class _MachineCardState extends State<_MachineCard> {
                 ),
                 label: Text(_expandido ? 'Ocultar información' : 'Mostrar información'),
               ),
-              FilledButton.tonalIcon(
-                onPressed: widget.onReportFailure,
-                icon: const Icon(Icons.report_problem_outlined),
-                label: const Text('Reportar falla'),
-              ),
+              if (widget.onReportFailure != null)
+                FilledButton.tonalIcon(
+                  onPressed: widget.onReportFailure,
+                  icon: const Icon(Icons.report_problem_outlined),
+                  label: const Text('Reportar falla'),
+                ),
             ],
           ),
         ],

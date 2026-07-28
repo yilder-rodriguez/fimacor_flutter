@@ -1,5 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Requerido para que el tecnico pueda tomar la foto de evidencia
+         del arreglo directamente desde la app (image_picker). -->
+    <uses-permission android:name="android.permission.CAMERA"/>
 
     <application
         android:label="FIMACOR"

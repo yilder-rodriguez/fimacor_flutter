@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>FIMACOR usa la camara para que el tecnico adjunte una foto de evidencia del arreglo realizado.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>FIMACOR necesita acceso a tus fotos para adjuntar evidencia del arreglo realizado.</string>
 </dict>
 </plist>
