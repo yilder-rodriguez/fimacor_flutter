@@ -66,12 +66,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
               color: const Color(0xFF10875F),
             ),
             const SizedBox(height: 12),
-            MetricCard(
-              icon: Icons.report_problem_rounded,
-              label: 'Novedades abiertas',
-              value: '${summary.openReports}',
-              color: const Color(0xFF8A5A00),
-            ),
+            // El Tecnico no puede reportar novedades (esa accion es
+            // exclusiva del Cuentadante en la web), asi que "Novedades
+            // abiertas" siempre le daria 0 y no le sirve de nada; en su
+            // lugar se muestran sus reparaciones pendientes por reportar.
+            widget.api.isTecnico
+                ? MetricCard(
+                    icon: Icons.handyman_rounded,
+                    label: 'Reparaciones pendientes',
+                    value: '${summary.pendingRepairs}',
+                    color: const Color(0xFFC65A2E),
+                  )
+                : MetricCard(
+                    icon: Icons.report_problem_rounded,
+                    label: 'Novedades abiertas',
+                    value: '${summary.openReports}',
+                    color: const Color(0xFF8A5A00),
+                  ),
             const SizedBox(height: 14),
             InfoCard(
               child: Column(

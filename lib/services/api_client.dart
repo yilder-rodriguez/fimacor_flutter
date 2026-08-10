@@ -10,6 +10,9 @@ import '../models/login_result.dart';
 import '../models/machine.dart';
 import '../models/maintenance_item.dart';
 import '../models/manual_item.dart';
+import '../models/register_result.dart';
+import '../models/register_role.dart';
+import '../models/repair_history_item.dart';
 import '../models/repair_pending.dart';
 import '../models/json_helpers.dart';
 
@@ -23,11 +26,6 @@ class ApiClient {
   int? _userId;
   String? _role;
 
-  /// Roles autorizados a usar esta app movil. Se compara en minuscula y
-  /// solo requiere que el texto CONTENGA una de estas palabras, para
-  /// tolerar variantes como "Cuentadante" o "Tecnico de mantenimiento".
-  static const _rolesPermitidos = ['cuentadante', 'tecnico'];
-
   String get cookieHeader =>
       _cookies.entries.map((entry) => '${entry.key}=${entry.value}').join('; ');
 
@@ -36,6 +34,11 @@ class ApiClient {
   String? get role => _role;
 
   bool get isTecnico => (_role ?? '').toLowerCase().contains('tecnico');
+
+  bool get isCuentadanteOTecnico {
+    final rol = (_role ?? '').toLowerCase();
+    return rol.contains('cuentadante') || rol.contains('tecnico');
+  }
 
   Future<LoginResult> login(String email, String password) async {
     final data = await _postJson({
@@ -46,16 +49,6 @@ class ApiClient {
 
     if (data['ok'] == true) {
       final rolCrudo = (data['rol'] ?? '').toString();
-      final rolNormalizado = rolCrudo.toLowerCase();
-      final permitido = rolNormalizado.isEmpty ||
-          _rolesPermitidos.any((r) => rolNormalizado.contains(r));
-      if (!permitido) {
-        clearSession();
-        return const LoginResult(
-          ok: false,
-          message: 'Esta app solo permite acceso de cuentadantes y tecnicos.',
-        );
-      }
       _userId = asInt(data['idUsuario'] ?? data['id']);
       _role = rolCrudo.isEmpty ? null : rolCrudo;
       return LoginResult(ok: true, userId: _userId, role: _role);
@@ -82,6 +75,79 @@ class ApiClient {
     _role = null;
   }
 
+  // ---------------------------------------------------------------
+  // REGISTRO DE USUARIO (autoservicio: Aprendiz, Instructor, Tecnico,
+  // Logistica). Requiere validar el carnet SENA antes de enviar el
+  // formulario, igual que en Registro_usuario.jsp.
+  // ---------------------------------------------------------------
+
+  /// Roles habilitados para autoregistro.
+  Future<List<RegisterRole>> fetchRegisterRoles() async {
+    final data = await _getList({'accion': 'rolesRegistro'});
+    return data.map(RegisterRole.fromJson).toList();
+  }
+
+  /// Analiza la foto del carnet SENA (misma IA que usa la web) y devuelve
+  /// el documento y rol detectados para poder validarlos en el formulario.
+  Future<CarnetAnalysisResult> analyzeCarnet(File photo) async {
+    final uri = Uri.parse(AppConfig.analizarCarnetUrl);
+    final request = http.MultipartRequest('POST', uri);
+    request.headers.addAll(_headers());
+    request.files.add(await http.MultipartFile.fromPath('fotoCarnet', photo.path));
+
+    final streamed = await _client.send(request);
+    final response = await http.Response.fromStream(streamed);
+    _saveCookies(response.headers);
+    final decoded = _decodeMap(response.body);
+    return CarnetAnalysisResult.fromJson(decoded);
+  }
+
+  Future<RegisterResult> registerUser({
+    required String nombre,
+    required String apellido,
+    required String documento,
+    required String telefono,
+    required String correo,
+    required String contrasena,
+    required String tipoDoc,
+    required int idRol,
+    required String carnetDocumento,
+    required String carnetRol,
+    String? carnetFotoBase64,
+  }) async {
+    final data = await _postJson({
+      'accion': 'registrarUsuario',
+      'nombre': nombre.trim(),
+      'apellido': apellido.trim(),
+      'documento': documento.trim(),
+      'telefono': telefono.trim(),
+      'correo': correo.trim(),
+      'contrasena': contrasena,
+      'tipoDoc': tipoDoc,
+      'rol': '$idRol',
+      'carnetValidado': '1',
+      'carnetDocumento': carnetDocumento,
+      'carnetRol': carnetRol,
+      if (carnetFotoBase64 != null) 'carnetFoto': carnetFotoBase64,
+    }, keepSessionOnError: true);
+    return RegisterResult.fromJson(data);
+  }
+
+  Future<RegisterResult> verifyRegisterCode(String codigo) async {
+    final data = await _postJson({
+      'accion': 'verificarCodigoRegistro',
+      'codigo': codigo.trim(),
+    }, keepSessionOnError: true);
+    return RegisterResult.fromJson(data);
+  }
+
+  Future<RegisterResult> resendRegisterCode() async {
+    final data = await _postJson({
+      'accion': 'reenviarCodigoRegistro',
+    }, keepSessionOnError: true);
+    return RegisterResult.fromJson(data);
+  }
+
   Future<DashboardSummary> dashboardSummary() async {
     final data = await _getJson(_withUser({'accion': 'resumen'}));
     return DashboardSummary.fromJson(data);
@@ -89,6 +155,15 @@ class ApiClient {
 
   Future<List<Machine>> assignedMachines() async {
     final data = await _getList(_withUser({'accion': 'maquinasAsignadas'}));
+    return data.map(Machine.fromJson).toList();
+  }
+
+  /// Catalogo COMPLETO de maquinas registradas (equivalente movil de
+  /// Maquinas_registradas.jsp). Un Tecnico puede verlas todas aunque
+  /// solo pueda reportar/editar las suyas; esta lista es de solo
+  /// lectura para ese rol.
+  Future<List<Machine>> allMachines() async {
+    final data = await _getList(_withUser({'accion': 'todasLasMaquinas'}));
     return data.map(Machine.fromJson).toList();
   }
 
@@ -128,6 +203,14 @@ class ApiClient {
   Future<List<RepairPending>> pendingRepairs() async {
     final data = await _getList(_withUser({'accion': 'reparacionesPendientes'}));
     return data.map(RepairPending.fromJson).toList();
+  }
+
+  /// Solo para el rol Tecnico: historial COMPLETO de sus mantenimientos
+  /// asignados (pendientes y ya reparados), equivalente movil de "sus"
+  /// filas en Historial_mantenimiento.jsp.
+  Future<List<RepairHistoryItem>> repairHistory() async {
+    final data = await _getList(_withUser({'accion': 'historialTecnico'}));
+    return data.map(RepairHistoryItem.fromJson).toList();
   }
 
   /// Solo para el rol Tecnico: cierra un mantenimiento asignado adjuntando

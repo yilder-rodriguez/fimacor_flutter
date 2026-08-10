@@ -5,6 +5,8 @@ import '../theme.dart';
 import '../widgets/app_snack.dart';
 import '../widgets/brand_header.dart';
 import 'home_screen.dart';
+import 'register_screen.dart';
+import 'role_home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -39,7 +41,11 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       if (result.ok) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => HomeScreen(api: _api)),
+          MaterialPageRoute(
+            builder: (_) => _api.isCuentadanteOTecnico
+                ? HomeScreen(api: _api)
+                : RoleHomeScreen(api: _api),
+          ),
         );
       } else {
         showAppSnack(context, result.message ?? 'No se pudo iniciar sesion.');
@@ -54,104 +60,123 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.fondoOscuro,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.25),
-                      blurRadius: 24,
-                      offset: const Offset(0, 12),
-                    ),
-                  ],
-                ),
-                child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const BrandHeader(),
-                    const SizedBox(height: 28),
-                    Text(
-                      'Ingreso de cuentadantes y tecnicos',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF16352D),
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Accede con tus credenciales para consultar y gestionar la informacion asignada.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xFF60746E),
-                          ),
-                    ),
-                    const SizedBox(height: 24),
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Correo',
-                        prefixIcon: Icon(Icons.mail_outline),
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.fondoOscuro, AppColors.fondoOscuroVerdoso],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 24,
+                        offset: const Offset(0, 12),
                       ),
-                      validator: (value) {
-                        final text = value?.trim() ?? '';
-                        if (text.isEmpty) return 'Ingresa el correo.';
-                        if (!text.contains('@')) return 'Correo no valido.';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscure,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _submit(),
-                      decoration: InputDecoration(
-                        labelText: 'Contrasena',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          onPressed: () => setState(() => _obscure = !_obscure),
-                          icon: Icon(
-                            _obscure
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                          ),
-                        ),
-                      ),
-                      validator: (value) {
-                        if ((value ?? '').trim().isEmpty) {
-                          return 'Ingresa la contrasena.';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 22),
-                    FilledButton.icon(
-                      onPressed: _loading ? null : _submit,
-                      icon: _loading
-                          ? const SizedBox.square(
-                              dimension: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                    ],
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const BrandHeader(),
+                        const SizedBox(height: 28),
+                        Text(
+                          'Ingreso al sistema',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF16352D),
                               ),
-                            )
-                          : const Icon(Icons.login_rounded),
-                      label: Text(_loading ? 'Ingresando...' : 'Ingresar'),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Accede con tus credenciales. Disponible para todos los roles del sistema.',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: const Color(0xFF60746E),
+                              ),
+                        ),
+                        const SizedBox(height: 24),
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          decoration: const InputDecoration(
+                            labelText: 'Correo',
+                            prefixIcon: Icon(Icons.mail_outline),
+                          ),
+                          validator: (value) {
+                            final text = value?.trim() ?? '';
+                            if (text.isEmpty) return 'Ingresa el correo.';
+                            if (!text.contains('@')) return 'Correo no valido.';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: _obscure,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _submit(),
+                          decoration: InputDecoration(
+                            labelText: 'Contrasena',
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              onPressed: () => setState(() => _obscure = !_obscure),
+                              icon: Icon(
+                                _obscure
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                            ),
+                          ),
+                          validator: (value) {
+                            if ((value ?? '').trim().isEmpty) {
+                              return 'Ingresa la contrasena.';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 22),
+                        FilledButton.icon(
+                          onPressed: _loading ? null : _submit,
+                          icon: _loading
+                              ? const SizedBox.square(
+                                  dimension: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.login_rounded),
+                          label: Text(_loading ? 'Ingresando...' : 'Ingresar'),
+                        ),
+                        const SizedBox(height: 10),
+                        TextButton(
+                          onPressed: _loading
+                              ? null
+                              : () => Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => RegisterScreen(api: _api),
+                                    ),
+                                  ),
+                          child: const Text('¿No tienes cuenta? Registrate'),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
                 ),
               ),
             ),

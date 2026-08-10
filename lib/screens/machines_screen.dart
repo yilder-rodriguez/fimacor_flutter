@@ -17,8 +17,16 @@ class MachinesScreen extends StatefulWidget {
   State<MachinesScreen> createState() => _MachinesScreenState();
 }
 
+/// Para el rol Tecnico, la pantalla de Maquinas tiene dos alcances (igual
+/// que en la web: Mis_maquinas_asignadas.jsp para lo propio, y
+/// Maquinas_registradas.jsp que lista TODO el catalogo). `mine` son las
+/// maquinas que tiene a cargo mientras estan en mantenimiento; `all` es
+/// el catalogo completo, de solo lectura, para consulta.
+enum _MachineScope { mine, all }
+
 class _MachinesScreenState extends State<MachinesScreen> {
   late Future<List<Machine>> _future;
+  _MachineScope _scope = _MachineScope.mine;
   String? selectedSede;
   String? selectedArea;
   String? selectedAmbiente;
@@ -29,7 +37,25 @@ class _MachinesScreenState extends State<MachinesScreen> {
   @override
   void initState() {
     super.initState();
-    _future = widget.api.assignedMachines();
+    _future = _load();
+  }
+
+  Future<List<Machine>> _load() {
+    if (widget.api.isTecnico && _scope == _MachineScope.all) {
+      return widget.api.allMachines();
+    }
+    return widget.api.assignedMachines();
+  }
+
+  void _changeScope(_MachineScope scope) {
+    if (scope == _scope) return;
+    setState(() {
+      _scope = scope;
+      selectedSede = null;
+      selectedArea = null;
+      selectedAmbiente = null;
+      _future = _load();
+    });
   }
 
   Future<void> _reportFailure(Machine machine) async {
@@ -46,7 +72,7 @@ class _MachinesScreenState extends State<MachinesScreen> {
       );
       if (!mounted) return;
       showAppSnack(context, 'Novedad registrada.');
-      setState(() => _future = widget.api.assignedMachines());
+      setState(() => _future = _load());
     } catch (error) {
       if (mounted) showAppSnack(context, error.toString());
     }
@@ -54,27 +80,64 @@ class _MachinesScreenState extends State<MachinesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FuturePanel<List<Machine>>(
-      mensajeCarga: 'Cargando maquinas...',
-      future: _future,
-      onRefresh: () => setState(() => _future = widget.api.assignedMachines()),
-      builder: (context, allMachines) {
-        // Un tecnico solo necesita ver las maquinas que tiene a cargo
-        // MIENTRAS estan en mantenimiento (para hacer su reparacion); las
-        // que ya estan operativas no le aportan nada en esta pantalla.
-        final machines = widget.api.isTecnico
-            ? allMachines
-                .where((m) => m.status.toLowerCase().contains('mantenimiento'))
-                .toList()
-            : allMachines;
+    final scopeSelector = widget.api.isTecnico
+        ? Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<_MachineScope>(
+                    segments: const [
+                      ButtonSegment(
+                        value: _MachineScope.mine,
+                        label: Text('Mis maquinas'),
+                        icon: Icon(Icons.build_circle_outlined),
+                      ),
+                      ButtonSegment(
+                        value: _MachineScope.all,
+                        label: Text('Todas'),
+                        icon: Icon(Icons.list_alt_outlined),
+                      ),
+                    ],
+                    selected: {_scope},
+                    onSelectionChanged: (selection) => _changeScope(selection.first),
+                  ),
+                ),
+              ),
+            ),
+          )
+        : null;
 
-        if (machines.isEmpty) {
-          return EmptyState(
-            text: widget.api.isTecnico
-                ? 'No tienes maquinas en mantenimiento en este momento.'
-                : 'No tienes maquinas asignadas.',
-          );
-        }
+    return Column(
+      children: [
+        if (scopeSelector != null) scopeSelector,
+        Expanded(
+          child: FuturePanel<List<Machine>>(
+            mensajeCarga: 'Cargando maquinas...',
+            future: _future,
+            onRefresh: () => setState(() => _future = _load()),
+            builder: (context, allMachines) {
+              // "Mis maquinas": solo las que el tecnico tiene a cargo
+              // MIENTRAS estan en mantenimiento (para hacer su reparacion).
+              // "Todas": el catalogo completo, sin filtrar por estado,
+              // igual que Maquinas_registradas.jsp en la web.
+              final machines = widget.api.isTecnico && _scope == _MachineScope.mine
+                  ? allMachines
+                      .where((m) => m.status.toLowerCase().contains('mantenimiento'))
+                      .toList()
+                  : allMachines;
+
+              if (machines.isEmpty) {
+                return EmptyState(
+                  text: widget.api.isTecnico && _scope == _MachineScope.mine
+                      ? 'No tienes maquinas en mantenimiento en este momento.'
+                      : widget.api.isTecnico
+                          ? 'No hay maquinas registradas.'
+                          : 'No tienes maquinas asignadas.',
+                );
+              }
         // helpers que usan los campos `sede/area/ambiente` si existen,
         // o hacen fallback parseando `location` separado por '-' para compatibilidad.
         List<String> partsOf(String loc) => loc
@@ -242,7 +305,10 @@ class _MachinesScreenState extends State<MachinesScreen> {
             ),
           ],
         );
-      },
+            },
+          ),
+        ),
+      ],
     );
   }
 }

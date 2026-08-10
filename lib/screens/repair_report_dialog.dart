@@ -3,8 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../models/repair_pending.dart';
-
 /// Resultado del formulario: observacion del tecnico + fotos de evidencia.
 class RepairReportResult {
   RepairReportResult({required this.observation, required this.photos});
@@ -17,10 +15,23 @@ class RepairReportResult {
 /// repuestos uso y adjunta evidencia fotografica (obligatoria). Es el
 /// equivalente movil del formulario "Confirmar reparacion" que el
 /// tecnico llena en la web (Historial_mantenimiento.jsp), pero con foto.
+///
+/// Se llama tanto desde la lista de "Pendientes" (RepairPending) como
+/// desde el "Historial" (RepairHistoryItem no completado), por eso solo
+/// recibe los campos de texto que necesita mostrar, no el modelo completo.
 class RepairReportDialog extends StatefulWidget {
-  const RepairReportDialog({required this.pending, super.key});
+  const RepairReportDialog({
+    required this.historialId,
+    required this.machineCode,
+    required this.description,
+    required this.tasks,
+    super.key,
+  });
 
-  final RepairPending pending;
+  final int historialId;
+  final String machineCode;
+  final String description;
+  final String tasks;
 
   @override
   State<RepairReportDialog> createState() => _RepairReportDialogState();
@@ -58,7 +69,6 @@ class _RepairReportDialogState extends State<RepairReportDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final pending = widget.pending;
     return AlertDialog(
       title: const Text('Reportar arreglo'),
       content: Form(
@@ -69,15 +79,13 @@ class _RepairReportDialogState extends State<RepairReportDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                pending.machineCode.isEmpty
-                    ? pending.description
-                    : pending.machineCode,
+                widget.machineCode.isEmpty ? widget.description : widget.machineCode,
                 style: Theme.of(context).textTheme.titleSmall,
               ),
-              if (pending.tasks.trim().isNotEmpty) ...[
+              if (widget.tasks.trim().isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(
-                  'Tareas: ${pending.tasks}',
+                  'Tareas: ${widget.tasks}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
