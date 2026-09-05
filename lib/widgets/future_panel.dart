@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../theme.dart';
 import 'loading_screen.dart';
 
 class FuturePanel<T> extends StatelessWidget {
@@ -38,10 +39,26 @@ class FuturePanel<T> extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.wifi_off_rounded, size: 48),
-                  const SizedBox(height: 12),
-                  Text(snapshot.error.toString(), textAlign: TextAlign.center),
-                  const SizedBox(height: 12),
+                  Container(
+                    width: 78,
+                    height: 78,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFE9E0),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: const Icon(
+                      Icons.wifi_off_rounded,
+                      size: 34,
+                      color: Color(0xFFC65A2E),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    snapshot.error.toString(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: AppColors.textoLabel),
+                  ),
+                  const SizedBox(height: 16),
                   FilledButton.icon(
                     onPressed: onRefresh,
                     icon: const Icon(Icons.refresh_rounded),

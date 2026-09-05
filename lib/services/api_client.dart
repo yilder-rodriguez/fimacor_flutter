@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 import '../config.dart';
+import '../models/admin_role_permiso.dart';
+import '../models/admin_user.dart';
 import '../models/api_exception.dart';
 import '../models/dashboard_summary.dart';
 import '../models/login_result.dart';
@@ -39,6 +41,13 @@ class ApiClient {
     final rol = (_role ?? '').toLowerCase();
     return rol.contains('cuentadante') || rol.contains('tecnico');
   }
+
+  bool get isAdministrador => (_role ?? '').toLowerCase().contains('administrador');
+
+  /// El propio idUsuario de la sesion activa, usado por las pantallas de
+  /// administracion para evitar que un admin se desactive/elimine a si
+  /// mismo (misma validacion que ya hace el servidor).
+  int? get userId => _userId;
 
   Future<LoginResult> login(String email, String password) async {
     final data = await _postJson({
@@ -243,6 +252,148 @@ class ApiClient {
     _saveCookies(response.headers);
     _ensureOk(response);
     final data = _decodeMap(response.body);
+    _throwIfNotOk(data);
+  }
+
+  // ---------------------------------------------------------------
+  // MODULO ADMINISTRADOR - GESTION DE USUARIOS
+  // Equivalente movil de Tabla_usuario.jsp. El servidor valida que
+  // el idUsuario de sesion (agregado por _withUser) tenga rol total;
+  // aqui solo armamos las peticiones.
+  // ---------------------------------------------------------------
+
+  Future<List<AdminUser>> adminUsers() async {
+    final data = await _getList(_withUser({'accion': 'adminUsuarios'}));
+    return data.map(AdminUser.fromJson).toList();
+  }
+
+  Future<List<AdminRole>> adminRoles() async {
+    final data = await _getList(_withUser({'accion': 'adminRoles'}));
+    return data.map(AdminRole.fromJson).toList();
+  }
+
+  /// Crea un usuario nuevo (idUsuarioObjetivo se omite / es 0) o actualiza
+  /// uno existente. Deja [contrasena] vacia al editar si no se quiere
+  /// cambiar la clave actual.
+  Future<void> adminSaveUser({
+    int? idUsuarioObjetivo,
+    required String nombre,
+    required String apellido,
+    required String documento,
+    required String telefono,
+    required String correo,
+    String contrasena = '',
+    String tipoDoc = 'CC',
+    required int idRol,
+    required bool activo,
+  }) async {
+    final data = await _postJson(_withUser({
+      'accion': 'adminUsuarioGuardar',
+      'idUsuarioObjetivo': '${idUsuarioObjetivo ?? 0}',
+      'nombre': nombre.trim(),
+      'apellido': apellido.trim(),
+      'documento': documento.trim(),
+      'telefono': telefono.trim(),
+      'correo': correo.trim(),
+      'contrasena': contrasena,
+      'tipoDoc': tipoDoc,
+      'idRol': '$idRol',
+      'activo': activo ? '1' : '0',
+    }));
+    _throwIfNotOk(data);
+  }
+
+  Future<void> adminSetUserStatus({
+    required int idUsuarioObjetivo,
+    required bool activo,
+  }) async {
+    final data = await _postJson(_withUser({
+      'accion': 'adminUsuarioEstado',
+      'idUsuarioObjetivo': '$idUsuarioObjetivo',
+      'activo': activo ? '1' : '0',
+    }));
+    _throwIfNotOk(data);
+  }
+
+  Future<void> adminDeleteUser(int idUsuarioObjetivo) async {
+    final data = await _postJson(_withUser({
+      'accion': 'adminUsuarioEliminar',
+      'idUsuarioObjetivo': '$idUsuarioObjetivo',
+    }));
+    _throwIfNotOk(data);
+  }
+
+  // ---------------------------------------------------------------
+  // MODULO ADMINISTRADOR - ROLES Y PERMISOS
+  // Equivalente movil de Roles.jsp/Permisos.jsp.
+  // ---------------------------------------------------------------
+
+  Future<List<AdminPermiso>> adminPermisos() async {
+    final data = await _getList(_withUser({'accion': 'adminPermisos'}));
+    return data.map(AdminPermiso.fromJson).toList();
+  }
+
+  Future<List<AdminRolPermisos>> adminRolesConPermisos() async {
+    final data = await _getList(_withUser({'accion': 'adminRolPermisos'}));
+    return data.map(AdminRolPermisos.fromJson).toList();
+  }
+
+  /// Crea (idRolObjetivo nulo) o renombra un rol y guarda de una vez sus
+  /// permisos seleccionados.
+  Future<void> adminSaveRole({
+    int? idRolObjetivo,
+    required String descripcion,
+    required Set<int> permisos,
+  }) async {
+    final data = await _postJson(_withUser({
+      'accion': 'adminRolGuardar',
+      'idRolObjetivo': '${idRolObjetivo ?? 0}',
+      'descripcion': descripcion.trim(),
+      'permisos': permisos.join(','),
+    }));
+    _throwIfNotOk(data);
+  }
+
+  /// Guarda solo los permisos de un rol existente, sin tocar su nombre.
+  Future<void> adminSaveRolePermissions({
+    required int idRolObjetivo,
+    required Set<int> permisos,
+  }) async {
+    final data = await _postJson(_withUser({
+      'accion': 'adminRolPermisosGuardar',
+      'idRolObjetivo': '$idRolObjetivo',
+      'permisos': permisos.join(','),
+    }));
+    _throwIfNotOk(data);
+  }
+
+  Future<void> adminDeleteRole(int idRolObjetivo) async {
+    final data = await _postJson(_withUser({
+      'accion': 'adminRolEliminar',
+      'idRolObjetivo': '$idRolObjetivo',
+    }));
+    _throwIfNotOk(data);
+  }
+
+  Future<void> adminSavePermission({
+    int? idPermisoObjetivo,
+    required String codigo,
+    required String descripcion,
+  }) async {
+    final data = await _postJson(_withUser({
+      'accion': 'adminPermisoGuardar',
+      'idPermisoObjetivo': '${idPermisoObjetivo ?? 0}',
+      'codigo': codigo.trim(),
+      'descripcion': descripcion.trim(),
+    }));
+    _throwIfNotOk(data);
+  }
+
+  Future<void> adminDeletePermission(int idPermisoObjetivo) async {
+    final data = await _postJson(_withUser({
+      'accion': 'adminPermisoEliminar',
+      'idPermisoObjetivo': '$idPermisoObjetivo',
+    }));
     _throwIfNotOk(data);
   }
 

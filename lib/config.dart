@@ -1,6 +1,6 @@
 class AppConfig {
   static const String apiBaseUrl =
-      'fimacorserver-production.up.railway.app/MobileApiServlet';
+      'https://fimacorserver-production.up.railway.app/MobileApiServlet';
 
   /// Misma app/host que MobileApiServlet, pero sin el nombre del servlet,
   /// para poder armar la URL de otros servlets del mismo contexto (por

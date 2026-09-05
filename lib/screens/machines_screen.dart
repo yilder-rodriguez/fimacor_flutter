@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/machine.dart';
 import '../services/api_client.dart';
 import '../widgets/app_snack.dart';
+import '../theme.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/future_panel.dart';
 import '../widgets/info_card.dart';
@@ -210,7 +211,14 @@ class _MachinesScreenState extends State<MachinesScreen> {
               padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 720),
-                child: Column(
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.superficie,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(color: const Color(0xFFEDF2EF)),
+                  ),
+                  child: Column(
                   children: [
                     Row(
                       children: [
@@ -278,8 +286,8 @@ class _MachinesScreenState extends State<MachinesScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
                   ],
+                  ),
                 ),
               ),
             ),

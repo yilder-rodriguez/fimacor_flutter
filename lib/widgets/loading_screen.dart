@@ -2,12 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 
-/// Pantalla/indicador de carga unico para toda la app, para que
-/// cualquier lugar que este cargando datos (login, dashboard,
-/// maquinas, mantenimiento, manuales, etc.) se vea igual.
-///
-/// Uso tipico:
-///   if (cargando) return const LoadingScreen(mensaje: 'Cargando...');
+/// Pantalla/indicador de carga unico para toda la app.
 class LoadingScreen extends StatelessWidget {
   const LoadingScreen({
     this.mensaje = 'Cargando...',
@@ -15,11 +10,7 @@ class LoadingScreen extends StatelessWidget {
     super.key,
   });
 
-  /// Texto que se muestra debajo del indicador.
   final String mensaje;
-
-  /// Si es true, no pinta un Scaffold completo (util cuando ya estas
-  /// dentro de otro Scaffold/body y solo quieres el indicador centrado).
   final bool fondoTransparente;
 
   @override
@@ -29,14 +20,18 @@ class LoadingScreen extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 72,
-            height: 72,
+            width: 78,
+            height: 78,
             decoration: BoxDecoration(
-              color: AppColors.verdeClaroChip,
-              borderRadius: BorderRadius.circular(20),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.verdeClaroChip, Color(0xFFDCF0E5)],
+              ),
+              borderRadius: BorderRadius.circular(24),
             ),
             child: const Padding(
-              padding: EdgeInsets.all(16),
+              padding: EdgeInsets.all(18),
               child: CircularProgressIndicator(
                 color: AppColors.primario,
                 strokeWidth: 3.2,
@@ -56,12 +51,10 @@ class LoadingScreen extends StatelessWidget {
       ),
     );
 
-    if (fondoTransparente) {
-      return contenido;
-    }
+    if (fondoTransparente) return contenido;
 
     return Scaffold(
-      backgroundColor: AppColors.fondoFormulario,
+      backgroundColor: AppColors.fondoApp,
       body: contenido,
     );
   }

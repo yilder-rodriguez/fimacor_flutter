@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 
 class EmptyState extends StatelessWidget {
-  const EmptyState({required this.text, super.key});
+  const EmptyState({required this.text, this.icon = Icons.inbox_outlined, super.key});
 
   final String text;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
@@ -16,23 +17,27 @@ class EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: AppColors.verdeClaroChip,
+              width: 84,
+              height: 84,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [AppColors.verdeClaroChip, Color(0xFFDCF0E5)],
+                ),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.inbox_outlined,
-                size: 30,
-                color: AppColors.primario,
-              ),
+              child: Icon(icon, size: 36, color: AppColors.primario),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
             Text(
               text,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textoLabel),
+              style: const TextStyle(
+                color: AppColors.textoLabel,
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
             ),
           ],
         ),

@@ -10,15 +10,22 @@ class BrandHeader extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 58,
-          height: 58,
+          width: 60,
+          height: 60,
           decoration: BoxDecoration(
-            color: AppColors.verdeClaroChip,
+            gradient: AppColors.gradientePrimario,
             borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primario.withValues(alpha: 0.35),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: const Icon(
             Icons.precision_manufacturing_rounded,
-            color: AppColors.primario,
+            color: Colors.white,
             size: 32,
           ),
         ),
@@ -32,6 +39,7 @@ class BrandHeader extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w900,
                       color: AppColors.primarioOscuro,
+                      letterSpacing: 0.3,
                     ),
               ),
               Text(

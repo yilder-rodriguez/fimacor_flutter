@@ -33,7 +33,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('FIMACOR'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('FIMACOR'),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                widget.api.role ?? '',
+                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: 'Cerrar sesion',

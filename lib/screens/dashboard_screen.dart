@@ -41,6 +41,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           padding: const EdgeInsets.all(18),
           children: [
             HeroPanel(
+              role: widget.api.role,
               title: widget.api.isTecnico ? 'Hola, tecnico' : 'Hola, cuentadante',
               subtitle: widget.api.isTecnico
                   ? 'Resumen de tus mantenimientos y maquinas a cargo'

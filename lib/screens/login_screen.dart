@@ -4,6 +4,7 @@ import '../services/api_client.dart';
 import '../theme.dart';
 import '../widgets/app_snack.dart';
 import '../widgets/brand_header.dart';
+import 'admin/admin_home_screen.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
 import 'role_home_screen.dart';
@@ -44,7 +45,9 @@ class _LoginScreenState extends State<LoginScreen> {
           MaterialPageRoute(
             builder: (_) => _api.isCuentadanteOTecnico
                 ? HomeScreen(api: _api)
-                : RoleHomeScreen(api: _api),
+                : _api.isAdministrador
+                    ? AdminHomeScreen(api: _api)
+                    : RoleHomeScreen(api: _api),
           ),
         );
       } else {
@@ -61,33 +64,53 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.fondoOscuro, AppColors.fondoOscuroVerdoso],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: Container(
+        decoration: const BoxDecoration(gradient: AppColors.gradienteOscuro),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -80,
+              right: -60,
+              child: Container(
+                width: 260,
+                height: 260,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.acento.withValues(alpha: 0.10),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -100,
+              left: -80,
+              child: Container(
+                width: 280,
+                height: 280,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primario.withValues(alpha: 0.14),
+                ),
+              ),
+            ),
+            SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 24,
-                        offset: const Offset(0, 12),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Container(
+                      padding: const EdgeInsets.all(26),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.28),
+                            blurRadius: 30,
+                            offset: const Offset(0, 16),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Form(
+                      child: Form(
                     key: _formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -182,6 +205,8 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
+      ],
+    ),
       ),
     );
   }
