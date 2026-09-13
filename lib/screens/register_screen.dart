@@ -1,7 +1,4 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../models/register_role.dart';
 import '../services/api_client.dart';
@@ -10,6 +7,8 @@ import '../widgets/app_snack.dart';
 import '../widgets/brand_header.dart';
 import 'verify_code_screen.dart';
 
+/// Registro publico (autoservicio) de Tecnico. Ya NO pide foto de carnet
+/// SENA: solo datos personales + verificacion por codigo de correo.
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({required this.api, super.key});
 
@@ -41,11 +40,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   var _obscure = true;
   var _enviando = false;
 
-  File? _fotoCarnet;
-  var _analizandoCarnet = false;
-  String? _carnetDocumentoDetectado;
-  String? _carnetRolDetectado;
-
   @override
   void initState() {
     super.initState();
@@ -59,6 +53,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() {
         _roles = roles;
         _cargandoRoles = false;
+        // Solo hay un rol autogestionable (Tecnico); si es el unico,
+        // se preselecciona para no obligar a un paso extra.
+        if (roles.length == 1) _rolSeleccionado = roles.first;
       });
     } catch (error) {
       if (!mounted) return;
@@ -78,44 +75,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  Future<void> _elegirFotoCarnet(ImageSource source) async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: source, imageQuality: 85);
-    if (picked == null) return;
-    final file = File(picked.path);
-    setState(() {
-      _fotoCarnet = file;
-      _carnetDocumentoDetectado = null;
-      _carnetRolDetectado = null;
-      _analizandoCarnet = true;
-    });
-    try {
-      final resultado = await widget.api.analyzeCarnet(file);
-      if (!mounted) return;
-      setState(() {
-        _analizandoCarnet = false;
-        _carnetDocumentoDetectado = resultado.documento;
-        _carnetRolDetectado = resultado.rol;
-      });
-      if (!resultado.ok) {
-        showAppSnack(
-          context,
-          resultado.message ?? 'No se pudo leer el carnet, intenta con otra foto.',
-        );
-      }
-    } catch (error) {
-      if (!mounted) return;
-      setState(() => _analizandoCarnet = false);
-      showAppSnack(context, 'No se pudo analizar el carnet: $error');
-    }
-  }
-
-  bool get _carnetListo =>
-      _carnetDocumentoDetectado != null &&
-      _carnetDocumentoDetectado!.isNotEmpty &&
-      _carnetRolDetectado != null &&
-      _carnetRolDetectado!.isNotEmpty;
-
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_rolSeleccionado == null) {
@@ -124,10 +83,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
     if (_tipoDoc == null) {
       showAppSnack(context, 'Selecciona el tipo de documento.');
-      return;
-    }
-    if (!_carnetListo) {
-      showAppSnack(context, 'Valida tu carnet SENA (foto) antes de continuar.');
       return;
     }
 
@@ -142,8 +97,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         contrasena: _contrasenaController.text,
         tipoDoc: _tipoDoc!,
         idRol: _rolSeleccionado!.idRol,
-        carnetDocumento: _carnetDocumentoDetectado!,
-        carnetRol: _carnetRolDetectado!,
       );
       if (!mounted) return;
       if (resultado.ok) {
@@ -185,14 +138,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.25),
-                      blurRadius: 24,
-                      offset: const Offset(0, 12),
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
+                  border: Border.all(color: AppColors.bordePlaca),
                 ),
                 child: Form(
                   key: _formKey,
@@ -312,8 +259,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               onChanged: (value) => setState(() => _rolSeleccionado = value),
                               validator: (value) => value == null ? 'Selecciona un rol.' : null,
                             ),
-                      const SizedBox(height: 20),
-                      _buildCarnetSection(context),
                       const SizedBox(height: 22),
                       FilledButton.icon(
                         onPressed: _enviando ? null : _submit,
@@ -340,94 +285,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildCarnetSection(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.verdeClaroChip,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primario.withValues(alpha: 0.25)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.badge_outlined, color: AppColors.primarioOscuro),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Validacion obligatoria: foto del carnet SENA',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF16352D),
-                      ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _analizandoCarnet
-                      ? null
-                      : () => _elegirFotoCarnet(ImageSource.camera),
-                  icon: const Icon(Icons.photo_camera_outlined),
-                  label: const Text('Camara'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _analizandoCarnet
-                      ? null
-                      : () => _elegirFotoCarnet(ImageSource.gallery),
-                  icon: const Icon(Icons.image_outlined),
-                  label: const Text('Galeria'),
-                ),
-              ),
-            ],
-          ),
-          if (_analizandoCarnet) ...[
-            const SizedBox(height: 10),
-            const Row(
-              children: [
-                SizedBox.square(
-                  dimension: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                SizedBox(width: 10),
-                Text('Analizando carnet...'),
-              ],
-            ),
-          ] else if (_fotoCarnet != null) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Icon(
-                  _carnetListo ? Icons.check_circle : Icons.error_outline,
-                  color: _carnetListo ? AppColors.primario : Colors.orange,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _carnetListo
-                        ? 'Detectado: doc. $_carnetDocumentoDetectado - rol $_carnetRolDetectado'
-                        : 'No se pudo confirmar el documento o el rol en la foto.',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
       ),
     );
   }

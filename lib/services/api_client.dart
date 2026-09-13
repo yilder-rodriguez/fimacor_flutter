@@ -97,29 +97,15 @@ class ApiClient {
 
   // ---------------------------------------------------------------
   // REGISTRO DE USUARIO (autoservicio: Aprendiz, Instructor, Tecnico,
-  // Logistica). Requiere validar el carnet SENA antes de enviar el
-  // formulario, igual que en Registro_usuario.jsp.
+  // Logistica). Ya no requiere validar el carnet SENA (se quito ese
+  // paso); solo se valida correo/documento/telefono unicos mas el
+  // codigo de verificacion que llega por correo.
   // ---------------------------------------------------------------
 
   /// Roles habilitados para autoregistro.
   Future<List<RegisterRole>> fetchRegisterRoles() async {
     final data = await _getList({'accion': 'rolesRegistro'});
     return data.map(RegisterRole.fromJson).toList();
-  }
-
-  /// Analiza la foto del carnet SENA (misma IA que usa la web) y devuelve
-  /// el documento y rol detectados para poder validarlos en el formulario.
-  Future<CarnetAnalysisResult> analyzeCarnet(File photo) async {
-    final uri = Uri.parse(AppConfig.analizarCarnetUrl);
-    final request = http.MultipartRequest('POST', uri);
-    request.headers.addAll(_headers());
-    request.files.add(await http.MultipartFile.fromPath('fotoCarnet', photo.path));
-
-    final streamed = await _client.send(request);
-    final response = await http.Response.fromStream(streamed);
-    _saveCookies(response.headers);
-    final decoded = _decodeMap(response.body);
-    return CarnetAnalysisResult.fromJson(decoded);
   }
 
   Future<RegisterResult> registerUser({
@@ -131,9 +117,6 @@ class ApiClient {
     required String contrasena,
     required String tipoDoc,
     required int idRol,
-    required String carnetDocumento,
-    required String carnetRol,
-    String? carnetFotoBase64,
   }) async {
     final data = await _postJson({
       'accion': 'registrarUsuario',
@@ -145,10 +128,6 @@ class ApiClient {
       'contrasena': contrasena,
       'tipoDoc': tipoDoc,
       'rol': '$idRol',
-      'carnetValidado': '1',
-      'carnetDocumento': carnetDocumento,
-      'carnetRol': carnetRol,
-      if (carnetFotoBase64 != null) 'carnetFoto': carnetFotoBase64,
     }, keepSessionOnError: true);
     return RegisterResult.fromJson(data);
   }
