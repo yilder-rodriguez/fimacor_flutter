@@ -202,7 +202,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const BrandHeader(),
                       const SizedBox(height: 24),
                       Text(
-                        'Registro (Aprendiz, Instructor, Tecnico o Logistica)',
+                        'Registro (Tecnico)',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF16352D),

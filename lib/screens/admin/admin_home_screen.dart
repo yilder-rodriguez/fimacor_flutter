@@ -4,6 +4,8 @@ import '../../services/api_client.dart';
 import '../../theme.dart';
 import '../../widgets/app_snack.dart';
 import '../login_screen.dart';
+import 'admin_catalogs_screen.dart';
+import 'admin_machines_screen.dart';
 import 'admin_roles_screen.dart';
 import 'admin_users_screen.dart';
 
@@ -44,7 +46,10 @@ class AdminHomeScreen extends StatelessWidget {
         titulo: 'Maquinas',
         subtitulo: 'Ficha tecnica y asignacion a cuentadantes',
         icon: Icons.precision_manufacturing_outlined,
-        disponible: false,
+        disponible: true,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => AdminMachinesScreen(api: api)),
+        ),
       ),
       _AdminModule(
         titulo: 'Mantenimiento',
@@ -56,7 +61,10 @@ class AdminHomeScreen extends StatelessWidget {
         titulo: 'Catalogos',
         subtitulo: 'Sedes, areas, ambientes, marcas y modelos',
         icon: Icons.category_outlined,
-        disponible: false,
+        disponible: true,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => AdminCatalogsScreen(api: api)),
+        ),
       ),
       _AdminModule(
         titulo: 'Reportes',

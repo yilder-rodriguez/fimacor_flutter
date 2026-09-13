@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 
 /// Etiqueta compacta que deja explicito a que rol pertenece la vista
-/// actual (por ejemplo "Vista de Tecnico"). Se usa en la parte
-/// superior de las pantallas para que quede claro que cada rol ve
-/// solo lo que le corresponde, y no un panel generico compartido.
+/// actual (por ejemplo "Vista de Tecnico"). Estilo placa/etiqueta
+/// tecnica: rectangular con esquina minima y borde solido, no la
+/// pastilla completamente redondeada de cualquier app generica.
 class RoleBadge extends StatelessWidget {
   const RoleBadge({required this.role, this.light = false, super.key});
 
@@ -26,10 +26,10 @@ class RoleBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: light ? Colors.white.withValues(alpha: 0.14) : color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: light ? Colors.white.withValues(alpha: 0.35) : color.withValues(alpha: 0.3),
+        color: light ? Colors.white.withValues(alpha: 0.1) : color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border(
+          left: BorderSide(color: light ? Colors.white : color, width: 3),
         ),
       ),
       child: Row(

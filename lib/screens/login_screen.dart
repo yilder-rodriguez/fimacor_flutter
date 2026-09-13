@@ -8,6 +8,7 @@ import 'admin/admin_home_screen.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
 import 'role_home_screen.dart';
+import 'subdireccion_home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -45,9 +46,11 @@ class _LoginScreenState extends State<LoginScreen> {
           MaterialPageRoute(
             builder: (_) => _api.isCuentadanteOTecnico
                 ? HomeScreen(api: _api)
-                : _api.isAdministrador
-                    ? AdminHomeScreen(api: _api)
-                    : RoleHomeScreen(api: _api),
+                : _api.isSubdireccion
+                    ? SubdireccionHomeScreen(api: _api)
+                    : _api.isAdministrador
+                        ? AdminHomeScreen(api: _api)
+                        : RoleHomeScreen(api: _api),
           ),
         );
       } else {
@@ -126,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Accede con tus credenciales. Disponible para todos los roles del sistema.',
+                          'Ingreso exclusivo para Cuentadante, Subdireccion y Tecnico.',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: const Color(0xFF60746E),
                               ),

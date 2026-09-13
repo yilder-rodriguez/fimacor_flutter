@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 
+/// Encabezado de marca: usa el emblema real de FIMACOR (recortado del
+/// logo del proyecto) sobre una placa tinta, en vez de un icono
+/// generico de Material dentro de una caja con degradado.
 class BrandHeader extends StatelessWidget {
   const BrandHeader({super.key});
 
@@ -12,21 +15,15 @@ class BrandHeader extends StatelessWidget {
         Container(
           width: 60,
           height: 60,
+          padding: const EdgeInsets.all(9),
           decoration: BoxDecoration(
-            gradient: AppColors.gradientePrimario,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primario.withValues(alpha: 0.35),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            color: AppColors.tinta,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.primarioClaro, width: 2),
           ),
-          child: const Icon(
-            Icons.precision_manufacturing_rounded,
-            color: Colors.white,
-            size: 32,
+          child: Image.asset(
+            'assets/images/fimacor_icon_foreground.png',
+            fit: BoxFit.contain,
           ),
         ),
         const SizedBox(width: 14),
@@ -37,7 +34,7 @@ class BrandHeader extends StatelessWidget {
               Text(
                 'FIMACOR',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.primarioOscuro,
                       letterSpacing: 0.3,
                     ),

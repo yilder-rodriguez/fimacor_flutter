@@ -1,9 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
+import 'http_client_factory.dart';
+
 import '../config.dart';
+import '../models/admin_catalog_row.dart';
+import '../models/admin_machine.dart';
 import '../models/admin_role_permiso.dart';
 import '../models/admin_user.dart';
 import '../models/api_exception.dart';
@@ -14,12 +19,13 @@ import '../models/maintenance_item.dart';
 import '../models/manual_item.dart';
 import '../models/register_result.dart';
 import '../models/register_role.dart';
+import '../models/relocation.dart';
 import '../models/repair_history_item.dart';
 import '../models/repair_pending.dart';
 import '../models/json_helpers.dart';
 
 class ApiClient {
-  ApiClient({http.Client? client}) : _client = client ?? http.Client();
+  ApiClient({http.Client? client}) : _client = client ?? createPlatformHttpClient();
 
   static final Uri baseUri = Uri.parse(AppConfig.apiBaseUrl);
 
@@ -43,6 +49,11 @@ class ApiClient {
   }
 
   bool get isAdministrador => (_role ?? '').toLowerCase().contains('administrador');
+
+  bool get isCuentadante => (_role ?? '').toLowerCase().contains('cuentadante');
+
+  bool get isSubdireccion => (_role ?? '').toLowerCase().contains('subdireccion') ||
+      (_role ?? '').toLowerCase().contains('subdirección');
 
   /// El propio idUsuario de la sesion activa, usado por las pantallas de
   /// administracion para evitar que un admin se desactive/elimine a si
@@ -397,6 +408,185 @@ class ApiClient {
     _throwIfNotOk(data);
   }
 
+  // ---------------------------------------------------------------
+  // MODULO ADMINISTRADOR - MAQUINAS
+  // Equivalente movil de Maquinas_registradas.jsp / Administracion_maquinas.jsp.
+  // ---------------------------------------------------------------
+
+  Future<MachineCatalogs> adminMachineCatalogs() async {
+    final data = await _getJson(_withUser({'accion': 'adminCatalogosMaquina'}));
+    return MachineCatalogs.fromJson(data);
+  }
+
+  Future<List<AdminMachine>> adminMachines() async {
+    final data = await _getList(_withUser({'accion': 'adminMaquinas'}));
+    return data.map(AdminMachine.fromJson).toList();
+  }
+
+  Future<void> adminSaveMachine({
+    int? idMaquinaObjetivo,
+    required String codigoSena,
+    required String descripcion,
+    required int idMarca,
+    required int idModelo,
+    required int idTipo,
+    required int idAmbiente,
+    required int idSede,
+    required int idEstado,
+    String area = '',
+    String fechaCompra = '',
+    String valorMaquina = '',
+    bool tieneGarantia = false,
+    String fechaGarantia = '',
+  }) async {
+    final data = await _postJson(_withUser({
+      'accion': 'adminMaquinaGuardar',
+      'idMaquinaObjetivo': '${idMaquinaObjetivo ?? 0}',
+      'codigoSena': codigoSena.trim(),
+      'descripcion': descripcion.trim(),
+      'idMarca': '$idMarca',
+      'idModelo': '$idModelo',
+      'idTipo': '$idTipo',
+      'idAmbiente': '$idAmbiente',
+      'idSede': '$idSede',
+      'idEstado': '$idEstado',
+      'area': area.trim(),
+      'fechaCompra': fechaCompra,
+      'valorMaquina': valorMaquina.trim(),
+      'tieneGarantia': tieneGarantia ? '1' : '0',
+      'fechaGarantia': fechaGarantia,
+    }));
+    _throwIfNotOk(data);
+  }
+
+  Future<void> adminDeleteMachine(int idMaquinaObjetivo) async {
+    final data = await _postJson(_withUser({
+      'accion': 'adminMaquinaEliminar',
+      'idMaquinaObjetivo': '$idMaquinaObjetivo',
+    }));
+    _throwIfNotOk(data);
+  }
+
+  // ---------------------------------------------------------------
+  // MODULO ADMINISTRADOR - CATALOGOS (sedes, marcas, modelos, tipos de
+  // maquina, estados de maquina, ambientes, tipos de mantenimiento).
+  // Una unica forma generica {id, campos} para las 7 tablas.
+  // ---------------------------------------------------------------
+
+  Future<List<AdminCatalogRow>> adminCatalogList(String catalogo) async {
+    final data = await _getList(_withUser({
+      'accion': 'adminCatalogoListar',
+      'catalogo': catalogo,
+    }));
+    return data.map(AdminCatalogRow.fromJson).toList();
+  }
+
+  Future<void> adminCatalogSave({
+    required String catalogo,
+    int? idObjetivo,
+    required Map<String, String> campos,
+  }) async {
+    final data = await _postJson(_withUser({
+      'accion': 'adminCatalogoGuardar',
+      'catalogo': catalogo,
+      'idObjetivo': '${idObjetivo ?? 0}',
+      ...campos,
+    }));
+    _throwIfNotOk(data);
+  }
+
+  Future<void> adminCatalogDelete({
+    required String catalogo,
+    required int idObjetivo,
+  }) async {
+    final data = await _postJson(_withUser({
+      'accion': 'adminCatalogoEliminar',
+      'catalogo': catalogo,
+      'idObjetivo': '$idObjetivo',
+    }));
+    _throwIfNotOk(data);
+  }
+
+  // ---------------------------------------------------------------
+  // REUBICACION DE MAQUINA
+  // Solicitar (Cuentadante) y aprobar/rechazar (Subdireccion).
+  // ---------------------------------------------------------------
+
+  Future<RelocationCatalogs> relocationCatalogs() async {
+    final data = await _getJson(_withUser({'accion': 'reubicacionCatalogos'}));
+    return RelocationCatalogs.fromJson(data);
+  }
+
+  /// Solo Cuentadante. La evidencia fotografica es obligatoria, igual
+  /// que en Reubicacion_maquina.jsp.
+  Future<void> requestRelocation({
+    required int idMaquina,
+    required String tipoTraslado,
+    required String origen,
+    required String destino,
+    required int idAmbienteDestino,
+    int? idSedeDestino,
+    required String areaDestino,
+    required String descripcion,
+    String observacion = '',
+    required File evidencia,
+  }) async {
+    final request = http.MultipartRequest('POST', baseUri);
+    request.headers.addAll(_headers());
+    request.fields['accion'] = 'reubicacionSolicitar';
+    request.fields['idMaquina'] = '$idMaquina';
+    request.fields['tipoTraslado'] = tipoTraslado;
+    request.fields['origen'] = origen;
+    request.fields['destino'] = destino;
+    request.fields['ambienteDestino'] = '$idAmbienteDestino';
+    if (idSedeDestino != null) request.fields['sedeDestino'] = '$idSedeDestino';
+    request.fields['areaDestino'] = areaDestino;
+    request.fields['descripcion'] = descripcion;
+    request.fields['observacion'] = observacion;
+    final userId = _userId;
+    if (userId != null && userId > 0) {
+      request.fields['idUsuario'] = '$userId';
+    }
+    request.files.add(await http.MultipartFile.fromPath('evidencia', evidencia.path));
+
+    final streamed = await _client.send(request);
+    final response = await http.Response.fromStream(streamed);
+    _saveCookies(response.headers);
+    _ensureOk(response);
+    final data = _decodeMap(response.body);
+    _throwIfNotOk(data);
+  }
+
+  /// Solo Cuentadante: sus propias solicitudes, en cualquier estado.
+  Future<List<RelocationRequest>> myRelocationRequests() async {
+    final data = await _getList(_withUser({'accion': 'reubicacionesMias'}));
+    return data.map(RelocationRequest.fromJson).toList();
+  }
+
+  /// Solo Subdireccion: bandeja de solicitudes pendientes de firma.
+  Future<List<RelocationRequest>> pendingRelocationRequests() async {
+    final data = await _getList(_withUser({'accion': 'reubicacionesPendientes'}));
+    return data.map(RelocationRequest.fromJson).toList();
+  }
+
+  /// Solo Subdireccion: aprueba o rechaza con firma manuscrita (PNG en
+  /// base64, ej. "data:image/png;base64,....").
+  Future<void> respondRelocation({
+    required int idReubicacion,
+    required bool aprobar,
+    required String firmaDigitalBase64,
+    String observacion = '',
+  }) async {
+    final data = await _postJson(_withUser({
+      'accion': 'reubicacionResponder',
+      'idReubicacion': '$idReubicacion',
+      'decision': aprobar ? 'aprobar' : 'rechazar',
+      'firmaDigital': firmaDigitalBase64,
+      'observacion': observacion,
+    }));
+    _throwIfNotOk(data);
+  }
+
   Future<Map<String, dynamic>> _getJson(Map<String, String> query) async {
     final response = await _client.get(_uri(query), headers: _headers());
     _saveCookies(response.headers);
@@ -462,12 +652,17 @@ class ApiClient {
 
   Map<String, String> _headers() {
     return {
-      if (cookieHeader.isNotEmpty) 'Cookie': cookieHeader,
+      // En Flutter Web el navegador maneja la cookie de sesion solo
+      // (ver createPlatformHttpClient); si Dart intenta fijar "Cookie"
+      // a mano ahi, el navegador rechaza la peticion de entrada
+      // (ClientException: Failed to fetch).
+      if (!kIsWeb && cookieHeader.isNotEmpty) 'Cookie': cookieHeader,
       'Accept': 'application/json,text/html',
     };
   }
 
   void _saveCookies(Map<String, String> headers) {
+    if (kIsWeb) return;
     final rawCookie = headers['set-cookie'];
     if (rawCookie == null || rawCookie.isEmpty) return;
     for (final part in rawCookie.split(',')) {

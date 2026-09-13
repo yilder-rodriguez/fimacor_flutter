@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 
+/// Estado vacio: placa cuadrada (no burbuja circular con degradado) con
+/// el icono y un texto que dice que hacer, igual que una senal en un
+/// taller en vez de una ilustracion decorativa.
 class EmptyState extends StatelessWidget {
   const EmptyState({required this.text, this.icon = Icons.inbox_outlined, super.key});
 
@@ -17,17 +20,14 @@ class EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 84,
-              height: 84,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppColors.verdeClaroChip, Color(0xFFDCF0E5)],
-                ),
-                shape: BoxShape.circle,
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppColors.superficieAlterna,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(color: AppColors.bordePlaca),
               ),
-              child: Icon(icon, size: 36, color: AppColors.primario),
+              child: Icon(icon, size: 32, color: AppColors.primarioOscuro),
             ),
             const SizedBox(height: 18),
             Text(

@@ -21,8 +21,26 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
 
 flutter:
   uses-material-design: true
   assets:
     - assets/images/
+
+# Icono real de la app (el emblema de FIMACOR, no el placeholder de
+# Flutter). Despues de "flutter pub get", corre una vez:
+#   dart run flutter_launcher_icons
+# y el icono queda instalado para Android e iOS.
+flutter_launcher_icons:
+  android: true
+  ios: true
+  web:
+    generate: true
+    image_path: "assets/images/fimacor_icon.png"
+    background_color: "#0A0F1C"
+    theme_color: "#0A0F1C"
+  image_path: "assets/images/fimacor_icon.png"
+  adaptive_icon_background: "#0A0F1C"
+  adaptive_icon_foreground: "assets/images/fimacor_icon_foreground.png"
+  remove_alpha_ios: true

@@ -6,6 +6,7 @@ import 'login_screen.dart';
 import 'machines_screen.dart';
 import 'maintenance_screen.dart';
 import 'manuals_screen.dart';
+import 'relocation_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({required this.api, super.key});
@@ -21,6 +22,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Solo el Cuentadante solicita reubicaciones (igual que en la web:
+    // Reubicacion_maquina.jsp solo aparece para ese rol); el Tecnico no
+    // ve esta pestana.
+    final mostrarReubicacion = widget.api.isCuentadante;
+
     final pages = [
       DashboardScreen(
         api: widget.api,
@@ -28,7 +34,37 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       MachinesScreen(api: widget.api),
       MaintenanceScreen(api: widget.api),
+      if (mostrarReubicacion) RelocationScreen(api: widget.api),
       ManualsScreen(api: widget.api),
+    ];
+
+    final destinations = [
+      const NavigationDestination(
+        icon: Icon(Icons.space_dashboard_outlined),
+        selectedIcon: Icon(Icons.space_dashboard_rounded),
+        label: 'Inicio',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.precision_manufacturing_outlined),
+        selectedIcon: Icon(Icons.precision_manufacturing_rounded),
+        label: 'Maquinas',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.build_outlined),
+        selectedIcon: Icon(Icons.build_rounded),
+        label: 'Mantenimiento',
+      ),
+      if (mostrarReubicacion)
+        const NavigationDestination(
+          icon: Icon(Icons.move_up_outlined),
+          selectedIcon: Icon(Icons.move_up_rounded),
+          label: 'Reubicar',
+        ),
+      const NavigationDestination(
+        icon: Icon(Icons.menu_book_outlined),
+        selectedIcon: Icon(Icons.menu_book_rounded),
+        label: 'Manuales',
+      ),
     ];
 
     return Scaffold(
@@ -69,28 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (value) => setState(() => _index = value),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.space_dashboard_outlined),
-            selectedIcon: Icon(Icons.space_dashboard_rounded),
-            label: 'Inicio',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.precision_manufacturing_outlined),
-            selectedIcon: Icon(Icons.precision_manufacturing_rounded),
-            label: 'Maquinas',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.build_outlined),
-            selectedIcon: Icon(Icons.build_rounded),
-            label: 'Mantenimiento',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            selectedIcon: Icon(Icons.menu_book_rounded),
-            label: 'Manuales',
-          ),
-        ],
+        destinations: destinations,
       ),
     );
   }
