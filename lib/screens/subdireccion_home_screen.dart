@@ -5,6 +5,7 @@ import 'login_screen.dart';
 import 'manuals_screen.dart';
 import 'subdireccion_machines_screen.dart';
 import 'subdireccion_relocations_screen.dart';
+import 'relocation_screen.dart';
 
 /// Panel de inicio del rol Subdireccion. Su funcion propia y unica en el
 /// sistema es autorizar (firmar) reubicaciones de maquinas; ademas puede
@@ -26,6 +27,7 @@ class _SubdireccionHomeScreenState extends State<SubdireccionHomeScreen> {
   Widget build(BuildContext context) {
     final pages = [
       SubdireccionRelocationsScreen(api: widget.api),
+      RelocationScreen(api: widget.api),
       SubdireccionMachinesScreen(api: widget.api),
       ManualsScreen(api: widget.api),
     ];
@@ -70,9 +72,14 @@ class _SubdireccionHomeScreenState extends State<SubdireccionHomeScreen> {
         onDestinationSelected: (value) => setState(() => _index = value),
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.move_up_outlined),
-            selectedIcon: Icon(Icons.move_up_rounded),
-            label: 'Reubicaciones',
+            icon: Icon(Icons.fact_check_outlined),
+            selectedIcon: Icon(Icons.fact_check_rounded),
+            label: 'Autorizar',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.add_location_alt_outlined),
+            selectedIcon: Icon(Icons.add_location_alt_rounded),
+            label: 'Solicitar',
           ),
           NavigationDestination(
             icon: Icon(Icons.precision_manufacturing_outlined),
